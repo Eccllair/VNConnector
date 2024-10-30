@@ -54,11 +54,11 @@ namespace VNConnector
                 //TODO нормальное завершение задачи
                 StatusEllipse.Dispatcher.Invoke((Action)(() =>
                 {
-                    UIActions.ChangeStatusEllipse(StatusEllipse, status);
+                UIActions.ChangeStatusEllipse(StatusEllipse, status);
                 }));
                 StatusLabel.Dispatcher.Invoke((Action)(() =>
                 {
-                    UIActions.ChangeStatusLabel(StatusLabel, status);
+                UIActions.ChangeStatusLabel(StatusLabel, status);
                 }));
                 VNCSwitchButton.Dispatcher.Invoke((Action)(() =>
                 {
@@ -76,11 +76,11 @@ namespace VNConnector
             ShowIP(); //TODO parralel and loading
             new Thread(() => { Update(); }).Start();
         }
-
+        
         private void VNCSwitchButton_Click(object sender, RoutedEventArgs e)
         {
             switch (VNC.GetStatus())
-            {
+        {
                 case VNCStatuses.ENABLED:
                     VNC.Close();
                     break;

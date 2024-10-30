@@ -53,7 +53,7 @@ namespace VNConnector
             Thread.Sleep(3000);
             message_holder.Visibility = prev_visibility;
         }
-        
+
         public static void ChangeStatusEllipse(Ellipse ellipse, VNCStatuses status)
         {
             ellipse.Fill = StatusColor[status];
