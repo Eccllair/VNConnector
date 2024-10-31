@@ -47,8 +47,7 @@
         </Grid>
         <Label Grid.Column="1" Content="Ваш IP:" HorizontalAlignment="Left" Margin="10,60,0,0" Grid.Row="1" VerticalAlignment="Top" Width="157"/>
         <TextBox x:Name="ip_TextBox" Grid.Column="1" HorizontalAlignment="Left" VerticalContentAlignment="Center" Margin="176,65,0,0" Grid.Row="1" TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="88" IsReadOnly="True" Height="18"/>
-        <Image x:Name="pwdLoading_Image" Grid.Column="1" HorizontalAlignment="Left" Height="18" Margin="264,40,0,0" Grid.Row="1" VerticalAlignment="Top" Width="18" Source="/loading.png"/>
+        <Image x:Name="pwdLoading_Image" Grid.Column="1" HorizontalAlignment="Left" Height="18" Margin="264,40,0,0" Grid.Row="1" VerticalAlignment="Top" Width="18" Source="/loading.png" Visibility="Hidden"/>
         <Image x:Name="IPLoading_Image_Copy" Grid.Column="1" HorizontalAlignment="Left" Height="18" Margin="264,65,0,0" Grid.Row="1" VerticalAlignment="Top" Width="18" Source="/loading.png"/>
-
     </Grid>
 </Window>
