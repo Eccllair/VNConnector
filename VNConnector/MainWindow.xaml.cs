@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace VNConnector
 {
@@ -23,6 +25,20 @@ namespace VNConnector
     /// </summary>
     public partial class MainWindow : Window
     {
+        public MainWindow()
+        {
+            InitializeComponent();
+            threadDispatcher = new ThreadDispatcher();
+
+            CreatePassword(); //TODO parralel and loading
+            ShowIP(); //TODO parralel and loading
+
+            threadDispatcher.AddThread(new Thread(() => { Update(); }), "Update");
+            threadDispatcher.Start("Update");
+        }
+
+        ThreadDispatcher threadDispatcher;
+
         private void CreatePassword(string pwd = null)
         {
             string passwd = pwd;
@@ -31,6 +47,7 @@ namespace VNConnector
             try
             {
                 Passwd.Set(passwd);
+                UIActions.ShowMessage(pwd_label_message_holder, "пароль успешно изменен", MessageTypes.INFO);
             }
             catch (Exception)
             {
@@ -45,42 +62,28 @@ namespace VNConnector
             UIActions.ChangeIPTextBox(ip_TextBox, HostActions.GetLocalIPAddress());
         }
 
-
         public void Update()
         {
             while (true)
             {
                 VNCStatuses status = VNC.GetStatus();
-                //TODO нормальное завершение задачи
-                StatusEllipse.Dispatcher.Invoke((Action)(() =>
-                {
-                UIActions.ChangeStatusEllipse(StatusEllipse, status);
-                }));
-                StatusLabel.Dispatcher.Invoke((Action)(() =>
-                {
-                UIActions.ChangeStatusLabel(StatusLabel, status);
-                }));
-                VNCSwitchButton.Dispatcher.Invoke((Action)(() =>
-                {
-                    UIActions.ChangeStatusButton(VNCSwitchButton, status);
-                }));
-                //IEnumerable<TcpConnectionInformation> ts = VNC.GetClients();
+
+                ThreadDispatcher.StartUIAction(StatusEllipse ,() => UIActions.ChangeStatusEllipse(StatusEllipse, status));
+                ThreadDispatcher.StartUIAction(StatusLabel, () => UIActions.ChangeStatusLabel(StatusLabel, status));
+                ThreadDispatcher.StartUIAction(VNCSwitchButton, () => UIActions.ChangeStatusButton(VNCSwitchButton, status));
+
+                IEnumerable<TcpConnectionInformation> ts = VNC.GetClients();
+
                 Thread.Sleep(300);
             }
         }
 
-        public MainWindow()
-        {
-            InitializeComponent();
-            CreatePassword(); //TODO parralel and loading
-            ShowIP(); //TODO parralel and loading
-            new Thread(() => { Update(); }).Start();
-        }
-        
         private void VNCSwitchButton_Click(object sender, RoutedEventArgs e)
         {
+            //TODO ProcessDispatcher
+            //TODO не запускать новый процесс, сели предыдущий ещё запущен
             switch (VNC.GetStatus())
-        {
+            {
                 case VNCStatuses.ENABLED:
                     VNC.Close();
                     break;
@@ -92,8 +95,47 @@ namespace VNConnector
 
         private void change_pwd_Button_Click(object sender, RoutedEventArgs e)
         {
-            Thread changePwdThread = new Thread(() => { CreatePassword(pwd_TextBox.Text); });
-            new Thread(() => { UIActions.Loading(pwdLoading_Image, changePwdThread); }).Start();
+            //stop here
+            threadDispatcher.AddThread(new Thread(() => UIActions.ShowMessage(pwd_label_message_holder, "тест", MessageTypes.INFO)),"test");
+            threadDispatcher.Start("test");
+            try
+            {
+                threadDispatcher.AddThread(new Thread(() =>
+                {
+                    Visibility prev_visibility = pwdLoading_Image.Visibility;
+                    ThreadDispatcher.StartUIAction(pwdLoading_Image, () => pwdLoading_Image.Visibility = Visibility.Visible);
+                    int angle = 0;
+                    while (threadDispatcher.GetThread("pwd_Change")?.ThreadState != ThreadState.Stopped)
+                    {
+                        angle = (angle + 30) % 360;
+                        ThreadDispatcher.StartUIAction(pwdLoading_Image, () =>
+                        {
+                            pwdLoading_Image.RenderTransformOrigin = new Point(0.5, 0.5);
+                            pwdLoading_Image.RenderTransform = new RotateTransform(angle);
+                        });
+                        Thread.Sleep(150);
+                    }
+                    ThreadDispatcher.StartUIAction(pwdLoading_Image, () => pwdLoading_Image.Visibility = prev_visibility);
+                }), "Loading");
+                threadDispatcher.Start("Loading");
+            }
+            catch (ThreadExistsException) { }
+            try
+            {
+                threadDispatcher.AddThread(new Thread(() =>
+                {
+                    //TODO убрать костыль
+                    Thread.Sleep(150);
+                    ThreadDispatcher.StartUIAction(pwd_TextBox, () => CreatePassword(pwd_TextBox.Text));
+                }), "pwd_Change");
+                //threadDispatcher.Start("pwd_Change");
+            }
+            catch (ThreadExistsException) { }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            threadDispatcher.CloseAll();
         }
     }
 }

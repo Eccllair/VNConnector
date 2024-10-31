@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Threading;
 using System.Windows.Shapes;
 using System.Net;
+using System.Windows;
 
 namespace VNConnector
 {
@@ -46,12 +47,14 @@ namespace VNConnector
 
         public static void ShowMessage(Label message_holder, string message, MessageTypes type = MessageTypes.INFO)
         {
-            System.Windows.Visibility prev_visibility = message_holder.Visibility;
-            message_holder.Foreground = MessageColor[type];
-            message_holder.Content = message;
-            message_holder.Visibility = System.Windows.Visibility.Visible;
+            Visibility prev_visibility = message_holder.Visibility;
+            ThreadDispatcher.StartUIAction(message_holder, () => {
+                message_holder.Foreground = MessageColor[type];
+                message_holder.Content = message;
+                message_holder.Visibility = Visibility.Visible;
+            });
             Thread.Sleep(3000);
-            message_holder.Visibility = prev_visibility;
+            ThreadDispatcher.StartUIAction(message_holder, () => message_holder.Visibility = prev_visibility);
         }
 
         public static void ChangeStatusEllipse(Ellipse ellipse, VNCStatuses status)
@@ -77,17 +80,22 @@ namespace VNConnector
 
         public static void Loading(Image loading_image, Thread thread)
         {
-            while (thread.ThreadState != ThreadState.Stopped)
+
+            int angle = 0;
+            Visibility prev_visibility = loading_image.Visibility;
+            loading_image.Visibility = Visibility.Visible;
+            while (thread.ThreadState != ThreadState.Stopped && thread.ThreadState != ThreadState.WaitSleepJoin)
             {
-                loading_image.Dispatcher.Invoke((Action)(() =>
+                ThreadState test = thread.ThreadState;
+                loading_image.Dispatcher.Invoke(() =>
                 {
-                    int angle = 0;
-                    RotateTransform rotateTransform = new RotateTransform(angle);
-                    loading_image.RenderTransform = rotateTransform;
-                    angle++;
-                }));
+                    loading_image.RenderTransformOrigin = new Point(0.5, 0.5);
+                    loading_image.RenderTransform = new RotateTransform(angle);
+                });
                 Thread.Sleep(300);
+                angle += 32;
             }
+            loading_image.Visibility = prev_visibility;
         }
     }
 }
