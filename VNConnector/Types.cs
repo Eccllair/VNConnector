@@ -19,4 +19,11 @@ namespace VNConnector
         DISABLED = 0,
         ENABLED = 1,
     }
+
+    public enum ThreadCollosionActions
+    {
+        REPLASE = 0,
+        APPEND = 1,
+        RESTRICT = 2
+    }
 }
