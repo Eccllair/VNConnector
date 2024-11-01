@@ -77,7 +77,8 @@
     <Compile Include="Config.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="HostActions.cs" />
-    <Compile Include="ThreadDispatcher.cs" />
+    <Compile Include="TaskDispatcher.cs" />
+    <Compile Include="TCPHelper.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="UIActions.cs" />
     <Compile Include="VNC.cs" />
@@ -89,7 +90,6 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Client.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

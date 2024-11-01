@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="VNConnector" Height="200" Width="400" MinWidth="300" MaxHeight="200" MaxWidth="400">
+        Title="VNConnector" Height="200" Width="400" MinWidth="300" MaxHeight="400" MaxWidth="400" Closed="Window_Closed" Icon="/UltraVNC_icon_ASU.png">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"/>
@@ -16,38 +16,46 @@
             <RowDefinition Height="50*"/>
             <RowDefinition Height="1*"/>
         </Grid.RowDefinitions>
-        <Ellipse x:Name="StatusEllipse" Grid.Column="1" HorizontalAlignment="Left" Height="13" Margin="10,10,0,0" Grid.Row="1" Stroke="DarkRed" VerticalAlignment="Top" Width="13">
-            <Ellipse.Fill>
-                <SolidColorBrush Color="Red"/>
-            </Ellipse.Fill>
-        </Ellipse>
-        <Label x:Name="StatusLabel" Grid.Column="1" Content="доступ закрыт" HorizontalAlignment="Left" Margin="28,4,0,0" Grid.Row="1" VerticalAlignment="Top" Width="159"/>
-        <Label Grid.Column="1" Content="Пароль для подключения:" HorizontalAlignment="Left" Margin="10,35,0,0" Grid.Row="1" VerticalAlignment="Top" Width="157"/>
-        <TextBox x:Name="pwd_TextBox" Grid.Column="1" HorizontalAlignment="Left" Margin="176,40,0,0" Grid.Row="1" TextWrapping="Wrap" Text="123456" VerticalAlignment="Top" Width="88"/>
-        <Button x:Name="change_pwd_Button" Grid.Column="1" Content="изменить" HorizontalAlignment="Left" Margin="296,39,0,0" Grid.Row="1" VerticalAlignment="Top" Click="change_pwd_Button_Click"/>
-        <Label x:Name="pwd_label_message_holder" Grid.Column="1" Content="пароль изменен" HorizontalAlignment="Left" Margin="178,50,0,0" Grid.Row="1" VerticalAlignment="Top" Height="21" Width="86" FontSize="8" Visibility="Hidden"/>
-        <Button x:Name="VNCSwitchButton" Grid.Column="1" Content="Открыть доступ" HorizontalAlignment="Left" Margin="176,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="97" Click="VNCSwitchButton_Click"/>
-
-        <Grid Grid.Column="1" Grid.Row="1" Margin="0,88,1,0" Height="82" VerticalAlignment="Top">
+        <Grid Grid.Row="1" Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="1*"/>
-                <RowDefinition Height="4*"/>
+                <RowDefinition Height="90"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Label Content="Подключенные устройсва" Padding="0" HorizontalContentAlignment="Center" VerticalAlignment="Center"/>
-            <StackPanel Grid.Row="1">
-                <Grid Height="20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Padding="20 0 0 0" Text="10.0.1.1"/>
-                    <Button Grid.Column="1" Content="отключить" Margin="20 0"/>
-                </Grid>
-            </StackPanel>
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Label Content="Подключенные устройсва" Padding="0" HorizontalContentAlignment="Center" VerticalAlignment="Center"/>
+                <ListView x:Name="Users_ListView" Grid.Row="1" HorizontalContentAlignment="Stretch">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:Name="UserRow">
+                            <Grid Height="20" >
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Padding="20 0 0 0" Text="{Binding RemoteAddress}" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Content="отключить" Click="disconnect_client" Tag="{Binding OwningPidString}" Margin="20 0" VerticalContentAlignment="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+            <Ellipse x:Name="StatusEllipse" HorizontalAlignment="Left" Height="13" Margin="16,15,0,0" Stroke="DarkRed" VerticalAlignment="Top" Width="13" Fill="Red"/>
+            <Label x:Name="StatusLabel" Content="доступ закрыт" HorizontalAlignment="Left" Margin="29,12,0,0" VerticalAlignment="Top" Width="142" Height="18" Padding="5 0" VerticalContentAlignment="Top"/>
+            <Button x:Name="VNCSwitchButton" Content="Открыть доступ" HorizontalAlignment="Left" Margin="176,10,0,0" VerticalAlignment="Top" Width="97" Click="VNCSwitchButton_Click"/>
+            <Image x:Name="VNCSwitchLoading_Image" HorizontalAlignment="Left" Height="18" Margin="273,11,0,0" VerticalAlignment="Top" Width="18" Source="/loading.png" Visibility="Hidden"/>
+
+            <Label Content="Пароль для подключения:" HorizontalAlignment="Left" Margin="10,42,0,0" VerticalAlignment="Top" Width="161" Height="17" Padding="5 0"/>
+            <TextBox x:Name="pwd_TextBox" HorizontalAlignment="Left" Margin="176,42,0,0" TextWrapping="Wrap" Text="123456" VerticalAlignment="Top" Width="97"/>
+            <Button x:Name="change_pwd_Button" Content="изменить" HorizontalAlignment="Left" Margin="290,42,0,30" Click="change_pwd_Button_Click" VerticalContentAlignment="Center"/>
+            <Image x:Name="pwdLoading_Image" HorizontalAlignment="Left" Height="18" Margin="272,42,0,0" VerticalAlignment="Top" Width="18" Source="/loading.png" Visibility="Hidden"/>
+            <Label x:Name="pwd_label_message_holder" Content="статус изменения пароля" HorizontalAlignment="Left" Margin="116,56,0,0" VerticalAlignment="Top" Height="14" Width="218" FontSize="10" HorizontalContentAlignment="Center" Padding="0" Visibility="Hidden"/>
+
+            <Label Content="Ваш IP:" HorizontalAlignment="Left" Margin="10,70,0,0" VerticalAlignment="Top" Width="161" Padding="5 0" Height="18"/>
+            <TextBox x:Name="ip_TextBox" HorizontalAlignment="Left" VerticalContentAlignment="Center" Margin="176,70,0,0" TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="97" IsReadOnly="True" Height="18"/>
         </Grid>
-        <Label Grid.Column="1" Content="Ваш IP:" HorizontalAlignment="Left" Margin="10,60,0,0" Grid.Row="1" VerticalAlignment="Top" Width="157"/>
-        <TextBox x:Name="ip_TextBox" Grid.Column="1" HorizontalAlignment="Left" VerticalContentAlignment="Center" Margin="176,65,0,0" Grid.Row="1" TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="88" IsReadOnly="True" Height="18"/>
-        <Image x:Name="pwdLoading_Image" Grid.Column="1" HorizontalAlignment="Left" Height="18" Margin="264,40,0,0" Grid.Row="1" VerticalAlignment="Top" Width="18" Source="/loading.png" Visibility="Hidden"/>
-        <Image x:Name="IPLoading_Image_Copy" Grid.Column="1" HorizontalAlignment="Left" Height="18" Margin="264,65,0,0" Grid.Row="1" VerticalAlignment="Top" Width="18" Source="/loading.png"/>
     </Grid>
 </Window>

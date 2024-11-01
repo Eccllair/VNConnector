@@ -12,6 +12,69 @@ using System.Windows;
 
 namespace VNConnector
 {
+    internal class Notification
+    {
+        public Notification(string Text) 
+        {
+            this.Text = Text;
+        }
+
+        public string Text { get; set; }
+        public int LifeTime = 3000;
+        public SolidColorBrush Color = Brushes.Blue;
+
+        public void Popup(Label label)
+        {
+            Visibility prev_visibility = label.Visibility;
+            label.Dispatcher.Invoke(() => {
+                label.Foreground = Color;
+                label.Content = Text;
+                label.Visibility = Visibility.Visible;
+            });
+            Thread.Sleep(LifeTime);
+            label.Dispatcher.Invoke(() => label.Visibility = prev_visibility);
+        }
+    }
+
+    public class Loading
+    {
+        public Loading(Image Source)
+        {
+            this.Source = Source;
+        }
+
+        public Image Source { get; set; }
+
+        public int RotationDegree = 30;
+        public int TimeDelta = 150;
+        public List<Task> TrackedTasks = null;
+
+        private bool Finish = false;
+
+
+        public void Start()
+        {
+            int angle = 0;
+            Visibility prev_visibility = Source.Visibility;
+            Source.Dispatcher.Invoke(() => {
+                Source.Visibility = Visibility.Visible;
+                Source.RenderTransformOrigin = new Point(0.5, 0.5);
+            });
+            while (!(TrackedTasks.Where(TrackedTask => TrackedTask?.IsCompleted == true).Count() == TrackedTasks.Count()) && !Finish)
+            {
+                angle = (angle + RotationDegree) % 360;
+                Source.Dispatcher.Invoke(() =>
+                {
+                    Source.RenderTransform = new RotateTransform(angle);
+                });
+                Thread.Sleep(TimeDelta);
+            }
+            Source.Dispatcher.Invoke(() => Source.Visibility = prev_visibility);
+        }
+
+        public void Stop() { Finish = true; }
+    }
+
     internal class UIActions
     {
         static private Dictionary<MessageTypes, SolidColorBrush> MessageColor = new Dictionary<MessageTypes, SolidColorBrush>()
@@ -45,57 +108,25 @@ namespace VNConnector
             { VNCStatuses.DISABLED, "открыть доступ" },
         };
 
-        public static void ShowMessage(Label message_holder, string message, MessageTypes type = MessageTypes.INFO)
-        {
-            Visibility prev_visibility = message_holder.Visibility;
-            ThreadDispatcher.StartUIAction(message_holder, () => {
-                message_holder.Foreground = MessageColor[type];
-                message_holder.Content = message;
-                message_holder.Visibility = Visibility.Visible;
-            });
-            Thread.Sleep(3000);
-            ThreadDispatcher.StartUIAction(message_holder, () => message_holder.Visibility = prev_visibility);
-        }
-
-        public static void ChangeStatusEllipse(Ellipse ellipse, VNCStatuses status)
+        public static void UpdateStatusEllipse(Ellipse ellipse, VNCStatuses status)
         {
             ellipse.Fill = StatusColor[status];
             ellipse.Stroke = StatusStrokeColor[status];
         }
 
-        public static void ChangeStatusLabel(Label label, VNCStatuses status)
+        public static void UpdateStatusLabel(Label label, VNCStatuses status)
         {
             label.Content = StatusLabelText[status];
         }
 
-        public static void ChangeStatusButton(Button label, VNCStatuses status)
+        public static void UpdateStatusButton(Button label, VNCStatuses status)
         {
             label.Content = StatusTextBoxText[status];
         }
 
-        public static void ChangeIPTextBox(TextBox textBox, string ip)
+        public static void UpdateClientList(StackPanel panel, List<TCPHelper.TcpRow> userList)
         {
-            textBox.Text = ip;
-        }
-
-        public static void Loading(Image loading_image, Thread thread)
-        {
-
-            int angle = 0;
-            Visibility prev_visibility = loading_image.Visibility;
-            loading_image.Visibility = Visibility.Visible;
-            while (thread.ThreadState != ThreadState.Stopped && thread.ThreadState != ThreadState.WaitSleepJoin)
-            {
-                ThreadState test = thread.ThreadState;
-                loading_image.Dispatcher.Invoke(() =>
-                {
-                    loading_image.RenderTransformOrigin = new Point(0.5, 0.5);
-                    loading_image.RenderTransform = new RotateTransform(angle);
-                });
-                Thread.Sleep(300);
-                angle += 32;
-            }
-            loading_image.Visibility = prev_visibility;
+            //UserList;
         }
     }
 }
