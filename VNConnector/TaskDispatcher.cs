@@ -12,16 +12,24 @@ using System.Xml.Linq;
 
 namespace VNConnector
 {
-    internal class ThreadDispatcher
+    /// <summary>
+    /// Позволяет управлять запущенными задачами:
+    /// -- Закрывает задачи по запросу.
+    /// -- Препядствует повторному запуску задачи.
+    /// </summary>
+    internal class TaskDispatcher
     {
         private Dictionary<string, List<Thread>> threads;
 
-        public ThreadDispatcher() 
+        private Dictionary<string, List<Task>> tasks;
+
+        public TaskDispatcher() 
         {
             threads = new Dictionary<string,List<Thread>>();
+            tasks = new Dictionary<string,List<Task>>();
         }
 
-        private void ClearStopped(List<Thread> thread_list)
+        private void Clear(List<Thread> thread_list)
         {
             thread_list.RemoveAll(thread => thread.ThreadState == ThreadState.Stopped);
         }
@@ -81,12 +89,7 @@ namespace VNConnector
             else threads[ThreadName] = new List<Thread>() { thread };
         }
 
-        public static void StartUIAction(UIElement uiElement, Action action)
-        {
-            uiElement.Dispatcher.Invoke(action);
-        }
-
-        public void Start(string ThreadName)
+        public void StartThread(string ThreadName)
         {
             foreach (Thread thread in threads[ThreadName])
             {
@@ -137,6 +140,13 @@ namespace VNConnector
                 foreach (Thread thread in thread_list)
                 {
                     thread.Abort();
+                }
+            }
+            foreach (List<Task> task_list in tasks.Values)
+            {
+                foreach (Task task in task_list)
+                {
+                    task.Dispose();
                 }
             }
             threads = new Dictionary<string, List<Thread>>();
