@@ -11,5 +11,6 @@ namespace VNConnector
     public class Config
     {
         public static readonly string AppPath = Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName;
+        public static int VNCPort = 5900;
     }
 }
