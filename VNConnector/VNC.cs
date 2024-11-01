@@ -8,6 +8,7 @@ using System.Reflection;
 using static System.Net.Mime.MediaTypeNames;
 using System.Net.NetworkInformation;
 using System.Net;
+using System.Threading;
 
 namespace VNConnector
 {
@@ -17,12 +18,19 @@ namespace VNConnector
         public static void Open()
         {
             //TODO обработка ошибки: файл не найден
-            Process.Start($"{Config.AppPath}\\VNC-bin\\winvnc.exe");
+            Process.Start($"{Config.AppPath}\\winvnc.exe");
         }
 
         public static void Close()
         {
-            Process.Start($"{Config.AppPath}\\VNC-bin\\winvnc.exe", "-kill");
+            Process.Start($"{Config.AppPath}\\winvnc.exe", "-kill");
+        }
+
+        public static void Reload()
+        {
+            Close();
+            while (GetStatus() != VNCStatuses.DISABLED) { Thread.Sleep(300); }
+            Open();
         }
 
         public static VNCStatuses GetStatus()
@@ -32,14 +40,19 @@ namespace VNConnector
             return VNCStatuses.DISABLED;
         }
 
-        public static IEnumerable<TcpConnectionInformation> GetClients()
+        public static void SetPassword(string pwd)
         {
-            
-            IPGlobalProperties ip = IPGlobalProperties.GetIPGlobalProperties();
-            IEnumerable<TcpConnectionInformation> connections = ip.GetActiveTcpConnections().Where(
-                tcp => tcp.LocalEndPoint.Port == 5900 && tcp.State == TcpState.Established
-            );
-            return connections;
+            Process.Start($"{Config.AppPath}\\createpassword", $"-secure {pwd}");
+        }
+
+        public static List<TCPHelper.TcpRow> GetClients()
+        {
+            return TCPHelper.GetExtendedTcpTable().Where(tcp => tcp.LocalPort == Config.VNCPort).ToList();
+        }
+
+        public static void DisconnectClient(int Pid)
+        {
+            Process.GetProcessById(Pid).Kill();
         }
     }
 }
