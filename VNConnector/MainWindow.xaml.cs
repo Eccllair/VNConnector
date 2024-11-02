@@ -29,18 +29,18 @@ namespace VNConnector
         public MainWindow()
         {
             InitializeComponent();
-            threadDispatcher = new TaskDispatcher();
+            taskDispatcher = new TaskDispatcher();
 
             string pwd = Passwd.Generate();
-            Task.Run(() => CreatePassword(pwd));
+            taskDispatcher.Run(new Task(() => CreatePassword(pwd)), "ChangePwd");
             pwd_TextBox.Dispatcher.Invoke(() => pwd_TextBox.Text = pwd);
 
             //TODO run from dispathcer
-            Task.Run(Update);
+            taskDispatcher.Run(new Task(Update), "update");
         }
 
         //TODO переделать на Tasks
-        TaskDispatcher threadDispatcher;
+        TaskDispatcher taskDispatcher;
 
         private void CreatePassword(string pwd = null)
         {
@@ -89,7 +89,7 @@ namespace VNConnector
                 StatusEllipse.Dispatcher.Invoke(() => UIActions.UpdateStatusEllipse(StatusEllipse, status));
                 StatusLabel.Dispatcher.Invoke(() => UIActions.UpdateStatusLabel(StatusLabel, status));
                 VNCSwitchButton.Dispatcher.Invoke(() => UIActions.UpdateStatusButton(VNCSwitchButton, status));
-                VNCSwitchButton.Dispatcher.Invoke(() => Users_ListView.ItemsSource = VNC.GetClients());
+                Users_ListView.Dispatcher.Invoke(() => Users_ListView.ItemsSource = VNC.GetClients());
                 ShowIP();
 
                 Thread.Sleep(300);
@@ -98,41 +98,68 @@ namespace VNConnector
 
         private void VNCSwitchButton_Click(object sender, RoutedEventArgs e)
         {
-            //TODO не запускать новый процесс, сели предыдущий ещё запущен
-            VNCStatuses prev_status = VNC.GetStatus();
-            Task StatusChangeCheck = new Task(() =>
+            if (taskDispatcher.TasksExists("VNSSwitch"))
             {
-                while (VNC.GetStatus() == prev_status) { Thread.Sleep(300); }
-            });
-
-            Loading loading = new Loading(VNCSwitchLoading_Image);
-            loading.TrackedTasks = new List<Task>() { StatusChangeCheck };
-            Task.Run(loading.Start);
-
-            switch (VNC.GetStatus())
-            {
-                case VNCStatuses.ENABLED:
-                    VNC.Close();
-                    break;
-                case VNCStatuses.DISABLED:
-                    VNC.Open();
-                    break;
+                if (taskDispatcher.TasksCompleted("VNSSwitch")) taskDispatcher.DeleteCompleted("VNSSwitch");
+                else return;
             }
-            StatusChangeCheck.Start();
-        }
+            taskDispatcher.Run(() =>
+            {
+                VNCStatuses prev_status = VNC.GetStatus();
+                Task StatusChangeCheck = new Task(() =>
+                {
+                    while (VNC.GetStatus() == prev_status) { Thread.Sleep(300); }
+                });
+
+                Loading loading = new Loading(VNCSwitchLoading_Image);
+                loading.TrackedTasks = new List<Task>() { StatusChangeCheck };
+                Task.Run(loading.Start);
+
+                switch (VNC.GetStatus())
+                {
+                    case VNCStatuses.ENABLED:
+                        VNC.Close();
+                        break;
+                    case VNCStatuses.DISABLED:
+                        VNC.Open();
+                        break;
+                }
+                StatusChangeCheck.RunSynchronously();
+            }, "VNSSwitch");
+
+    }
 
         private void change_pwd_Button_Click(object sender, RoutedEventArgs e)
         {
-            Loading loading = new Loading(pwdLoading_Image);
-            Task reload_VNC_task = new Task(VNC.Reload);
-            Task change_pwd_task = new Task(() =>
+            if (taskDispatcher.TasksExists("ChangePwd"))
             {
-                CreatePassword(pwd_TextBox.Text);
-                reload_VNC_task.Start();
-            });
-            loading.TrackedTasks = new List<Task> { change_pwd_task, reload_VNC_task };
-            Task.Run(loading.Start);
-            pwd_TextBox.Dispatcher.Invoke(change_pwd_task.RunSynchronously);
+                if (taskDispatcher.TasksCompleted("ChangePwd")) taskDispatcher.DeleteCompleted("ChangePwd");
+                else return;
+            }
+            taskDispatcher.Run(() =>
+            {
+                Task reload_VNC_task = null;
+                List<Task> task_list = new List<Task>();
+                bool VNCEnabled = VNC.GetStatus() == VNCStatuses.ENABLED;
+
+                Loading loading = new Loading(pwdLoading_Image);
+                if (VNCEnabled)
+                {
+                    reload_VNC_task = new Task(VNC.Reload);
+                    task_list.Add(reload_VNC_task);
+                }
+                Task change_pwd_task = new Task(() =>
+                {
+                    CreatePassword(pwd_TextBox.Text);
+                    if (VNCEnabled) reload_VNC_task.Start();
+                });
+                task_list.Add(change_pwd_task);
+
+                loading.TrackedTasks = task_list;
+                Task.Run(loading.Start);
+                pwd_TextBox.Dispatcher.Invoke(change_pwd_task.RunSynchronously);
+                change_pwd_task.Wait();
+            }, "ChangePwd");
         }
 
         private void disconnect_client(object sender, RoutedEventArgs e)
@@ -147,8 +174,13 @@ namespace VNConnector
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            //TODO переделать на Task
-            threadDispatcher.CloseAll();
+            StatusEllipse.Dispatcher.DisableProcessing();
+            StatusLabel.Dispatcher.DisableProcessing();
+            VNCSwitchButton.Dispatcher.DisableProcessing();
+            Users_ListView.Dispatcher.DisableProcessing();
+            pwd_TextBox.Dispatcher.DisableProcessing();
+            ip_TextBox.Dispatcher.DisableProcessing();
+            taskDispatcher.CloseAll();
         }
     }
 }

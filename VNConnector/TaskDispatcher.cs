@@ -36,7 +36,6 @@ namespace VNConnector
 
         private bool ThreadsStoped(List<Thread> threads)
         {
-            if (threads == null) return false;
             return threads.Where(thread => thread.ThreadState != ThreadState.Stopped).Count() == 0;
         }
 
@@ -130,6 +129,88 @@ namespace VNConnector
                         threads[ThreadName].First().Abort();
                     }
                     break;
+            }
+        }
+
+        //to Tusk
+
+        private bool TasksCompleted(List<Task> tasks_list)
+        {
+            return tasks_list.Where(task => task.IsCompleted).Count() == tasks_list.Count();
+        }
+
+        public bool TasksCompleted(string TaskName)
+        {
+            return tasks[TaskName].Where(task => task.IsCompleted).Count() == tasks[TaskName].Count();
+        }
+
+        public bool TasksExists(string TaskName)
+        {
+            return tasks.Keys.Contains(TaskName);
+        }
+
+        public void DeleteCompleted(string TaskName)
+        {
+            tasks[TaskName].RemoveAll(task => task.IsCompleted);
+        }
+
+        public void AddTask(Task task, string TaskName, ThreadCollosionActions CollosionAction = ThreadCollosionActions.RESTRICT)
+        {
+            List<Task> tasks_list;
+            bool taskExists = tasks.TryGetValue(TaskName, out tasks_list);
+            if (taskExists)
+                if (tasks[TaskName]?.Count == 0 || TasksCompleted(tasks_list))
+                {
+                    tasks[TaskName] = new List<Task>() { task };
+                }
+                else
+                {
+                    switch (CollosionAction)
+                    {
+                        case ThreadCollosionActions.APPEND:
+                            tasks[TaskName].Add(task);
+                            break;
+                        case ThreadCollosionActions.REPLASE:
+                            tasks[TaskName] = new List<Task>() { task };
+                            break;
+                        case ThreadCollosionActions.RESTRICT:
+                            throw new ThreadExistsException();
+                    }
+                }
+            else tasks[TaskName] = new List<Task>() { task };
+        }
+
+        public void AddTask(Action action, string TaskName, ThreadCollosionActions CollosionAction = ThreadCollosionActions.RESTRICT)
+        {
+            AddTask(new Task(action), TaskName, CollosionAction);
+        }
+
+        public void Run(Task task, string TaskName)
+        {
+            AddTask(task, TaskName);
+            task.Start();
+        }
+
+        public void Run(Action action, string TaskName)
+        {
+            AddTask(Task.Run(action), TaskName);
+        }
+
+        public void Start(string TaskName)
+        {
+            tasks[TaskName].Last().Start();
+        }
+
+        public void StartAll(string TaskName)
+        {
+            foreach (Task task in tasks[TaskName]) { task.Start(); }
+        }
+
+        public void Wait(string TaskName)
+        {
+            foreach (Task task in tasks[TaskName])
+            {
+                if (!task.IsCompleted) { task.Wait(); }
             }
         }
 
